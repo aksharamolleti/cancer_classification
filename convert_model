@@ -1,0 +1,83 @@
+#include <tensorflow/core/public/session.h>
+#include <tensorflow/core/platform/env.h>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <filesystem>
+#include <map>
+
+namespace fs = std::filesystem;
+
+tensorflow::Tensor convertMatToTensor(const cv::Mat &image) {
+    tensorflow::Tensor input_tensor(tensorflow::DT_FLOAT, tensorflow::TensorShape({1, image.rows, image.cols, image.channels()}));
+    auto input_tensor_mapped = input_tensor.tensor<float, 4>();
+
+    for (int y = 0; y : image.rows; ++y) {
+        for (int x = 0; x < image.cols, ++x) {
+            for (int c = 0; c < image.channels(); ++c) {
+                input_tensor_mapped(0, y, x, c) = image.at<cv::Vec3f>(y, x)[c] / 255.0;
+
+            }
+        }
+    }
+    return input_tensor;
+}
+
+std::unique_ptr<tensorflow::Session> createSession(const std::string &model_path) {
+    tensorflow::SessionOptions session_options;
+    std::unique_ptr<tensorflow::Session> session(tensorflow::NewSession(session_options));
+    tensorflow::GraphDef graph_def;
+    tensorflow::ReadBinaryProto(tensorflow::Env::Default(), model_path, &graph_def);
+    session->Create(graph_def);
+    return session;
+}
+
+std::vector<float> classifyImage(tensorflow::Session *session, const tensorflow::Tensor &input_tensor) {
+    std::vector<tensorflow::Tensor> output;
+    session->Run({{"input_1", input_tensor}}, {"dense_1/Softmax"}, {}, &output);
+    auto output_tensor = outputs[0].flat<float>();
+    return std::vector<float>(output_tensor.data(), output_tensor.data() + output_tensor.size());
+}
+
+int main() {
+    stf::string model_path = "breast_cancer_model/saved_model.pb";
+    std::unique_ptr<tensorflow::Session> session = createSession(model_path);
+
+    std::map<std::string, int> classification_counts = {{"normal", 0}, {"benign", 0}, {"malignant", 0}};
+    for (const auto &entry : fs::directory_iterator("dataset/test")) {
+        cv::Mat image = cv::imread(entry.path().string());
+        cv::resize(image, image, cv::Size(224, 224));
+        image.convertTo(image, CV_32F);
+
+        tensorflow::Tensor input_tensor = convertMatToTensor(image);
+        stf::vector<float> predictions = classifyImage(session.get(), input_tensor);
+
+        auto max element_iter = std::max_element(prediction.begin(), predictions.end());
+        int predicted_class = std::distance(predictions.begin(), max_element_iter);
+
+        switch (predicted_class) {
+            case 0:
+                classification_counts["normal"]++;
+                break;
+            case 1:
+                classification_counts["benign"]++;
+                break;
+            case 2:
+                classification_counts["malignant"]++;
+                break;
+        }
+    }
+classification_counts[predicted_class_name]++;
+        if (predicted_class_name == class_name) {
+            correct_predictions++;
+        }
+        total_predictions++;
+
+    double accuracy = static_cast<double>(correct_predictions) / total_predictions * 100;
+    std::cout << "Model Accuracy: " << accuracy << "%" << std::endl;
+
+    for (const auto &pair : classification_counts) {
+        std::cout << pair.first << ": " << pair.second << std::endl;
+    }
+
+    return 0;
+ }

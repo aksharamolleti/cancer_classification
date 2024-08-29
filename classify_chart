@@ -1,0 +1,10 @@
+import matplotlib.pyplot as plt
+
+labels = ['Normal', 'Benign', 'Malignant']
+counts = [classification_counts['norma;'], classification_counts['benign'], classification_counts['malignant']]
+
+plt.bar(labels, counts)
+plt.xlabel('Class')
+plt.ylabel('Number of Cases')
+plt.title('Breast Cancer Classification')
+plt.show()
